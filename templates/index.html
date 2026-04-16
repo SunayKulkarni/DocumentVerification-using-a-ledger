@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document Verification Chain</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  </head>
+  <body>
+    <div class="bg-shape bg-shape-one"></div>
+    <div class="bg-shape bg-shape-two"></div>
+
+    <main class="container">
+      <header class="hero">
+        <p class="kicker">Blockchain Verification Portal</p>
+        <h1>Upload, Issue, and Verify Documents</h1>
+        <p class="subhead">
+          A local tamper-evident ledger for document authenticity checks.
+        </p>
+      </header>
+
+      <section class="stats-grid">
+        <article class="stat-card">
+          <h2>Chain Status</h2>
+          <p class="status {{ 'ok' if state.is_valid else 'bad' }}">
+            {{ 'Healthy' if state.is_valid else 'Corrupted' }}
+          </p>
+          <p>{{ state.chain_message }}</p>
+        </article>
+        <article class="stat-card">
+          <h2>Total Blocks</h2>
+          <p class="big-number">{{ state.chain_blocks }}</p>
+        </article>
+        <article class="stat-card">
+          <h2>Issued Documents</h2>
+          <p class="big-number">{{ state.document_count }}</p>
+        </article>
+      </section>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+      <section class="alerts">
+        {% for category, message in messages %}
+        <div class="alert {{ category }}">{{ message }}</div>
+        {% endfor %}
+      </section>
+      {% endif %}
+      {% endwith %}
+
+      <section class="forms-grid">
+        <article class="panel">
+          <h2>Issue Document</h2>
+          <form action="{{ url_for('issue_document') }}" method="post" enctype="multipart/form-data">
+            <label>
+              Owner Name
+              <input type="text" name="owner" placeholder="e.g. Sunay Kulkarni" required />
+            </label>
+            <label>
+              Document ID (optional)
+              <input type="text" name="document_id" placeholder="auto-generated if blank" />
+            </label>
+            <label>
+              Note (optional)
+              <input type="text" name="note" placeholder="Degree certificate 2026" />
+            </label>
+            <label>
+              Upload File
+              <input type="file" name="document" required />
+            </label>
+            <button type="submit">Issue To Blockchain</button>
+          </form>
+        </article>
+
+        <article class="panel">
+          <h2>Verify Document</h2>
+          <form action="{{ url_for('verify_document') }}" method="post" enctype="multipart/form-data">
+            <label>
+              Document ID (optional)
+              <input type="text" name="document_id" placeholder="narrow verification to one id" />
+            </label>
+            <label>
+              Upload File
+              <input type="file" name="document" required />
+            </label>
+            <button type="submit" class="alt">Verify File</button>
+          </form>
+        </article>
+      </section>
+
+      {% if issue_result %}
+      <section class="result-card success">
+        <h2>Issue Result</h2>
+        <p>{{ issue_result.message }}</p>
+        <ul>
+          <li><strong>Owner:</strong> {{ issue_result.owner }}</li>
+          <li><strong>Document ID:</strong> {{ issue_result.document_id }}</li>
+          <li><strong>Block Index:</strong> {{ issue_result.block_index }}</li>
+          <li><strong>Issued At:</strong> {{ issue_result.issued_at }}</li>
+          <li><strong>File Hash:</strong> {{ issue_result.file_hash }}</li>
+        </ul>
+      </section>
+      {% endif %}
+
+      {% if verify_result %}
+      <section class="result-card {{ 'success' if verify_result.status == 'success' else 'error' }}">
+        <h2>Verification Result</h2>
+        <p>{{ verify_result.message }}</p>
+        <ul>
+          {% if verify_result.file_name %}
+          <li><strong>File:</strong> {{ verify_result.file_name }}</li>
+          {% endif %}
+          {% if verify_result.document_id %}
+          <li><strong>Document ID:</strong> {{ verify_result.document_id }}</li>
+          {% endif %}
+          {% if verify_result.owner %}
+          <li><strong>Owner:</strong> {{ verify_result.owner }}</li>
+          {% endif %}
+          {% if verify_result.block_index is defined %}
+          <li><strong>Block Index:</strong> {{ verify_result.block_index }}</li>
+          {% endif %}
+          {% if verify_result.issued_at %}
+          <li><strong>Issued At:</strong> {{ verify_result.issued_at }}</li>
+          {% endif %}
+          {% if verify_result.file_hash %}
+          <li><strong>File Hash:</strong> {{ verify_result.file_hash }}</li>
+          {% endif %}
+        </ul>
+      </section>
+      {% endif %}
+
+      <section class="panel recent-panel">
+        <h2>Recent Issued Records</h2>
+        {% if state.recent_documents %}
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Block</th>
+                <th>Document ID</th>
+                <th>Owner</th>
+                <th>File Name</th>
+                <th>Issued At</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for doc in state.recent_documents %}
+              <tr>
+                <td>{{ doc.block_index }}</td>
+                <td>{{ doc.document_id }}</td>
+                <td>{{ doc.owner }}</td>
+                <td>{{ doc.file_name }}</td>
+                <td>{{ doc.issued_at }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <p class="empty">No issued documents yet. Upload a file to create the first record.</p>
+        {% endif %}
+      </section>
+    </main>
+  </body>
+</html>
