@@ -225,6 +225,14 @@ button:hover {
   padding-left: 18px;
 }
 
+.network-tip {
+  margin-top: 16px;
+}
+
+.network-tip p {
+  margin: 6px 0;
+}
+
 .qr-panel {
   margin-top: 14px;
   padding: 14px;

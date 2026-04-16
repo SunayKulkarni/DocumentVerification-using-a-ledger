@@ -3,11 +3,13 @@ from __future__ import annotations
 import base64
 import io
 import os
+import socket
 from pathlib import Path
+from urllib.parse import urlparse
 from uuid import uuid4
 
-from flask import Flask, flash, jsonify, redirect, render_template, request, url_for
-import qrcode
+from flask import Flask, flash, has_request_context, jsonify, redirect, render_template, request, url_for
+import qrcode  # pyright: ignore[reportMissingModuleSource]
 from werkzeug.utils import secure_filename
 
 from main import (
@@ -26,8 +28,47 @@ UPLOADS_DIR = BASE_DIR / "uploads"
 UPLOADS_DIR.mkdir(exist_ok=True)
 
 
+def _guess_local_ip() -> str | None:
+    # Detect a LAN-reachable IP for QR links used by mobile devices.
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+            sock.connect(("8.8.8.8", 80))
+            ip = sock.getsockname()[0]
+            if ip and not ip.startswith("127."):
+                return ip
+    except OSError:
+        pass
+
+    try:
+        ip = socket.gethostbyname(socket.gethostname())
+        if ip and not ip.startswith("127."):
+            return ip
+    except OSError:
+        pass
+
+    return None
+
+
+def _resolve_public_base_url() -> str:
+    configured = os.environ.get("PUBLIC_BASE_URL", "").strip().rstrip("/")
+    if configured:
+        return configured
+
+    current = request.host_url.rstrip("/")
+    parsed = urlparse(current)
+    if parsed.hostname in {"localhost", "127.0.0.1"}:
+        lan_ip = _guess_local_ip()
+        if lan_ip:
+            port = f":{parsed.port}" if parsed.port else ""
+            return f"{parsed.scheme}://{lan_ip}{port}"
+
+    return current
+
+
 def _build_verify_url(document_id: str) -> str:
-    return url_for("verify_by_document_id", document_id=document_id, _external=True)
+    base_url = _resolve_public_base_url()
+    verify_path = url_for("verify_by_document_id", document_id=document_id)
+    return f"{base_url}{verify_path}"
 
 
 def _build_qr_image_data(content: str) -> str:
@@ -116,11 +157,15 @@ def _save_uploaded_file() -> tuple[Path, str]:
 
 def _render_home(chain_path: Path, issue_result: dict[str, object] | None = None, verify_result: dict[str, object] | None = None):
     state = _get_dashboard_state(chain_path)
+    qr_base_url = _resolve_public_base_url() if has_request_context() else ""
+    qr_uses_configured_base = bool(os.environ.get("PUBLIC_BASE_URL", "").strip())
     return render_template(
         "index.html",
         state=state,
         issue_result=issue_result,
         verify_result=verify_result,
+        qr_base_url=qr_base_url,
+        qr_uses_configured_base=qr_uses_configured_base,
     )
 
 
@@ -314,4 +359,6 @@ app = create_app()
 
 
 if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=5000, debug=True)
+    host = os.environ.get("FLASK_HOST", "0.0.0.0")
+    port = int(os.environ.get("FLASK_PORT", "5000"))
+    app.run(host=host, port=port, debug=True)

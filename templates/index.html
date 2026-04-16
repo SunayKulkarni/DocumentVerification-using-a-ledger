@@ -37,6 +37,21 @@
         </article>
       </section>
 
+      <section class="panel network-tip">
+        <h2>Mobile QR Access</h2>
+        <p>
+          QR links are generated with this base URL:
+          <strong>{{ qr_base_url }}</strong>
+        </p>
+        {% if not qr_uses_configured_base %}
+        <p class="qr-note">
+          If your phone cannot open QR links, restart with
+          <strong>PUBLIC_BASE_URL=http://YOUR_LAPTOP_IP:5000</strong>
+          and make sure both devices are on the same Wi-Fi.
+        </p>
+        {% endif %}
+      </section>
+
       {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
       <section class="alerts">

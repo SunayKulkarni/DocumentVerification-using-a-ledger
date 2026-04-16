@@ -19,9 +19,22 @@ python webapp.py
 
 Then open: http://127.0.0.1:5000
 
+For mobile QR scanning on the same Wi-Fi, run with a reachable host URL:
+
+```bash
+PUBLIC_BASE_URL=http://YOUR_LAPTOP_IP:5000 FLASK_HOST=0.0.0.0 python webapp.py
+```
+
+Example:
+
+```bash
+PUBLIC_BASE_URL=http://192.168.1.23:5000 FLASK_HOST=0.0.0.0 python webapp.py
+```
+
 Web workflow:
 
 - Use **Issue Document** form to upload and register a file on chain.
+- Copy or scan the generated QR code to open the public verification page.
 - Use **Verify Document** form to upload and validate against chain records.
 - Use `/api/chain` for raw chain JSON.
 
