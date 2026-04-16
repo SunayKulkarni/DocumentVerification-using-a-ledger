@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import base64
+import io
 import os
 from pathlib import Path
 from uuid import uuid4
 
 from flask import Flask, flash, jsonify, redirect, render_template, request, url_for
+import qrcode
 from werkzeug.utils import secure_filename
 
 from main import (
@@ -21,6 +24,37 @@ from main import (
 BASE_DIR = Path(__file__).resolve().parent
 UPLOADS_DIR = BASE_DIR / "uploads"
 UPLOADS_DIR.mkdir(exist_ok=True)
+
+
+def _build_verify_url(document_id: str) -> str:
+    return url_for("verify_by_document_id", document_id=document_id, _external=True)
+
+
+def _build_qr_image_data(content: str) -> str:
+    qr = qrcode.QRCode(
+        version=None,
+        error_correction=qrcode.constants.ERROR_CORRECT_M,
+        box_size=8,
+        border=2,
+    )
+    qr.add_data(content)
+    qr.make(fit=True)
+    image = qr.make_image(fill_color="black", back_color="white")
+
+    buffer = io.BytesIO()
+    image.save(buffer, format="PNG")
+    encoded = base64.b64encode(buffer.getvalue()).decode("ascii")
+    return f"data:image/png;base64,{encoded}"
+
+
+def _find_document_block_by_id(chain, document_id: str):
+    for block in reversed(chain):
+        payload = block.payload
+        if payload.get("type") != "document":
+            continue
+        if payload.get("document_id") == document_id:
+            return block
+    return None
 
 
 def _get_dashboard_state(chain_path: Path) -> dict[str, object]:
@@ -101,6 +135,58 @@ def create_app() -> Flask:
     def home():
         return _render_home(chain_path)
 
+    @app.get("/verify/<document_id>")
+    def verify_by_document_id(document_id: str):
+        chain = load_chain(chain_path)
+        is_valid, chain_message = validate_chain(chain)
+
+        if not is_valid:
+            return render_template(
+                "qr_verify.html",
+                status="error",
+                message=f"Blockchain integrity check failed: {chain_message}",
+                record=None,
+                chain_valid=is_valid,
+                chain_message=chain_message,
+                verify_url=None,
+                qr_image_data=None,
+            )
+
+        record_block = _find_document_block_by_id(chain, document_id)
+        if record_block is None:
+            return render_template(
+                "qr_verify.html",
+                status="error",
+                message="No blockchain record found for this document ID.",
+                record=None,
+                chain_valid=is_valid,
+                chain_message=chain_message,
+                verify_url=None,
+                qr_image_data=None,
+            )
+
+        payload = record_block.payload
+        verify_url = _build_verify_url(document_id)
+        qr_image_data = _build_qr_image_data(verify_url)
+        record = {
+            "block_index": record_block.index,
+            "document_id": payload.get("document_id", ""),
+            "owner": payload.get("owner", ""),
+            "file_name": payload.get("file_name", ""),
+            "issued_at": payload.get("issued_at", ""),
+            "file_hash": payload.get("file_hash", ""),
+        }
+        return render_template(
+            "qr_verify.html",
+            status="success",
+            message="Document ID exists on the blockchain ledger.",
+            record=record,
+            chain_valid=is_valid,
+            chain_message=chain_message,
+            verify_url=verify_url,
+            qr_image_data=qr_image_data,
+        )
+
     @app.post("/issue")
     def issue_document():
         owner = request.form.get("owner", "").strip()
@@ -141,6 +227,8 @@ def create_app() -> Flask:
                 "owner": payload["owner"],
                 "issued_at": payload["issued_at"],
             }
+            issue_result["verify_url"] = _build_verify_url(payload["document_id"])
+            issue_result["qr_image_data"] = _build_qr_image_data(issue_result["verify_url"])
             return _render_home(chain_path, issue_result=issue_result)
         except Exception as exc:
             flash(f"Issue failed: {exc}", "error")

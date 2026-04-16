@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>QR Verification</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  </head>
+  <body>
+    <div class="bg-shape bg-shape-one"></div>
+    <div class="bg-shape bg-shape-two"></div>
+
+    <main class="container narrow">
+      <header class="hero">
+        <p class="kicker">Document QR Verification</p>
+        <h1>Blockchain Record Check</h1>
+        <p class="subhead">This page validates whether the document ID exists in the blockchain ledger.</p>
+      </header>
+
+      <section class="result-card {{ 'success' if status == 'success' else 'error' }}">
+        <h2>{{ 'Verified' if status == 'success' else 'Verification Failed' }}</h2>
+        <p>{{ message }}</p>
+        <p><strong>Chain Status:</strong> {{ 'Healthy' if chain_valid else 'Corrupted' }} ({{ chain_message }})</p>
+      </section>
+
+      {% if record %}
+      <section class="panel verify-details">
+        <h2>On-Chain Record</h2>
+        <ul>
+          <li><strong>Document ID:</strong> {{ record.document_id }}</li>
+          <li><strong>Owner:</strong> {{ record.owner }}</li>
+          <li><strong>File Name:</strong> {{ record.file_name }}</li>
+          <li><strong>Block Index:</strong> {{ record.block_index }}</li>
+          <li><strong>Issued At:</strong> {{ record.issued_at }}</li>
+          <li><strong>File Hash:</strong> {{ record.file_hash }}</li>
+        </ul>
+        <p class="qr-note">
+          To confirm full file authenticity, upload the original file on the main portal and run content verification.
+        </p>
+      </section>
+      {% endif %}
+
+      {% if qr_image_data and verify_url %}
+      <section class="panel qr-center">
+        <h2>Shareable Verification QR</h2>
+        <img src="{{ qr_image_data }}" alt="QR code for this verification page" />
+        <p><a href="{{ verify_url }}">{{ verify_url }}</a></p>
+      </section>
+      {% endif %}
+
+      <section class="panel">
+        <a class="action-link" href="{{ url_for('home') }}">Back to main portal</a>
+      </section>
+    </main>
+  </body>
+</html>

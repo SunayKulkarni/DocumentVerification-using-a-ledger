@@ -97,7 +97,16 @@
           <li><strong>Block Index:</strong> {{ issue_result.block_index }}</li>
           <li><strong>Issued At:</strong> {{ issue_result.issued_at }}</li>
           <li><strong>File Hash:</strong> {{ issue_result.file_hash }}</li>
+          <li>
+            <strong>Verification Link:</strong>
+            <a href="{{ issue_result.verify_url }}" target="_blank" rel="noopener noreferrer">Open verification page</a>
+          </li>
         </ul>
+        <div class="qr-panel">
+          <h3>Scan To Verify</h3>
+          <img src="{{ issue_result.qr_image_data }}" alt="QR code to verify issued document" />
+          <p class="qr-note">Scanning opens the document ID verification page.</p>
+        </div>
       </section>
       {% endif %}
 
@@ -140,6 +149,7 @@
                 <th>Owner</th>
                 <th>File Name</th>
                 <th>Issued At</th>
+                <th>Action</th>
               </tr>
             </thead>
             <tbody>
@@ -150,6 +160,9 @@
                 <td>{{ doc.owner }}</td>
                 <td>{{ doc.file_name }}</td>
                 <td>{{ doc.issued_at }}</td>
+                <td>
+                  <a href="{{ url_for('verify_by_document_id', document_id=doc.document_id) }}" target="_blank" rel="noopener noreferrer">Verify page</a>
+                </td>
               </tr>
               {% endfor %}
             </tbody>

@@ -225,6 +225,35 @@ button:hover {
   padding-left: 18px;
 }
 
+.qr-panel {
+  margin-top: 14px;
+  padding: 14px;
+  border-radius: 14px;
+  background: #ffffff;
+  border: 1px dashed #c7d9d1;
+}
+
+.qr-panel h3 {
+  margin: 0 0 10px;
+  font-size: 0.98rem;
+}
+
+.qr-panel img,
+.qr-center img {
+  width: 180px;
+  height: 180px;
+  display: block;
+  border-radius: 10px;
+  border: 1px solid #dbe7e1;
+  background: #fff;
+}
+
+.qr-note {
+  margin: 10px 0 0;
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+
 .recent-panel {
   margin-top: 16px;
 }
@@ -254,6 +283,38 @@ th {
 .empty {
   margin: 2px 0 0;
   color: var(--muted);
+}
+
+.container.narrow {
+  width: min(860px, 94vw);
+}
+
+.verify-details ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.verify-details li {
+  margin-bottom: 8px;
+}
+
+.qr-center {
+  margin-top: 16px;
+  text-align: center;
+}
+
+.qr-center img {
+  margin: 12px auto;
+}
+
+.action-link {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 10px 16px;
+  text-decoration: none;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(120deg, #0a8f72 0%, #126b58 100%);
 }
 
 @media (max-width: 900px) {
